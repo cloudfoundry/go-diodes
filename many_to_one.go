@@ -2,7 +2,6 @@ package diodes
 
 import (
 	"sync/atomic"
-	"time"
 	"unsafe"
 )
 
@@ -70,17 +69,6 @@ func (d *ManyToOne) TryNext() (data GenericDataType, ok bool) {
 	return value, ok
 }
 
-// Next will poll the ring buffer (at 10ms intervals) until data is available.
-func (d *ManyToOne) Next() GenericDataType {
-	readIndex := atomic.LoadUint64(&d.readIndex)
-	idx := readIndex % uint64(len(d.buffer))
-
-	result := d.pollBuffer(idx)
-	atomic.AddUint64(&d.readIndex, 1)
-
-	return result
-}
-
 func (d *ManyToOne) tryNext(idx uint64) (GenericDataType, bool) {
 	result := (*bucket)(atomic.SwapPointer(&d.buffer[idx], nil))
 
@@ -94,17 +82,4 @@ func (d *ManyToOne) tryNext(idx uint64) (GenericDataType, bool) {
 	}
 
 	return result.data, true
-}
-
-func (d *ManyToOne) pollBuffer(idx uint64) GenericDataType {
-	for {
-		result, ok := d.tryNext(idx)
-
-		if !ok {
-			time.Sleep(time.Millisecond * 10)
-			continue
-		}
-
-		return result
-	}
 }

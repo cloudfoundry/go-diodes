@@ -12,13 +12,13 @@ var _ = Describe("ManyToOne", func() {
 		d    *diodes.ManyToOne
 		data []byte
 
-		mockAlerter *mockAlerter
+		spy *spyAlerter
 	)
 
 	BeforeEach(func() {
-		mockAlerter = newMockAlerter()
+		spy = newSpyAlerter()
 
-		d = diodes.NewManyToOne(5, mockAlerter)
+		d = diodes.NewManyToOne(5, spy)
 
 		data = []byte("some-data")
 		d.Set(diodes.GenericDataType(&data))
@@ -69,30 +69,30 @@ var _ = Describe("ManyToOne", func() {
 
 			It("alerts for each dropped point", func() {
 				d.TryNext()
-				Expect(mockAlerter.AlertInput.Missed).To(Receive(Equal(5)))
+				Expect(spy.AlertInput.Missed).To(Receive(Equal(5)))
 			})
 
 			It("it updates the read index", func() {
 				d.TryNext()
-				Expect(mockAlerter.AlertInput.Missed).To(Receive(Equal(5)))
+				Expect(spy.AlertInput.Missed).To(Receive(Equal(5)))
 
 				for i := 0; i < 6; i++ {
 					d.Set(diodes.GenericDataType(&secondData))
 				}
 
 				d.TryNext()
-				Expect(mockAlerter.AlertInput.Missed).To(Receive(Equal(5)))
+				Expect(spy.AlertInput.Missed).To(Receive(Equal(5)))
 			})
 
 			Context("read catches up with write", func() {
 				BeforeEach(func() {
 					d.TryNext()
-					<-mockAlerter.AlertInput.Missed
+					<-spy.AlertInput.Missed
 				})
 
 				It("does not alert", func() {
 					d.TryNext()
-					Expect(mockAlerter.AlertInput.Missed).To(Not(Receive()))
+					Expect(spy.AlertInput.Missed).To(Not(Receive()))
 				})
 			})
 
@@ -105,7 +105,7 @@ var _ = Describe("ManyToOne", func() {
 				})
 
 				It("sends an alert for each set", func() {
-					Expect(mockAlerter.AlertInput.Missed).To(Receive(Equal(10)))
+					Expect(spy.AlertInput.Missed).To(Receive(Equal(10)))
 				})
 			})
 		})

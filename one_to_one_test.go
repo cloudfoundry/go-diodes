@@ -1,8 +1,9 @@
 package diodes_test
 
 import (
-	"diodes"
 	"sync"
+
+	"github.com/cloudfoundry/diodes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,11 +24,11 @@ var _ = Describe("OneToOne", func() {
 			d = diodes.NewOneToOne(5, mockAlerter)
 
 			data = []byte("some-data")
-			d.Set(data)
+			d.Set(diodes.GenericDataType(&data))
 		})
 
 		It("returns the next data slice", func() {
-			Expect(d.Next()).To(Equal(data))
+			Expect(*(*[]byte)(d.Next())).To(Equal(data))
 		})
 
 		Context("multiple data slices", func() {
@@ -37,12 +38,12 @@ var _ = Describe("OneToOne", func() {
 
 			BeforeEach(func() {
 				secondData = []byte("some-other-data")
-				d.Set(secondData)
+				d.Set(diodes.GenericDataType(&secondData))
 			})
 
 			It("returns data slices in order", func() {
-				Expect(d.Next()).To(Equal(data))
-				Expect(d.Next()).To(Equal(secondData))
+				Expect(*(*[]byte)(d.Next())).To(Equal(data))
+				Expect(*(*[]byte)(d.Next())).To(Equal(secondData))
 			})
 
 			Describe("TryNext()", func() {
@@ -74,7 +75,7 @@ var _ = Describe("OneToOne", func() {
 
 				var waitForNext = func() {
 					defer wg.Done()
-					rxCh <- d.Next()
+					rxCh <- *(*[]byte)(d.Next())
 				}
 
 				BeforeEach(func() {
@@ -92,7 +93,7 @@ var _ = Describe("OneToOne", func() {
 
 				It("blocks until data is available", func() {
 					Consistently(rxCh).Should(HaveLen(0))
-					d.Set(data)
+					d.Set(diodes.GenericDataType(&data))
 					Eventually(rxCh).Should(HaveLen(1))
 				})
 			})
@@ -100,12 +101,12 @@ var _ = Describe("OneToOne", func() {
 			Context("buffer size exceeded", func() {
 				BeforeEach(func() {
 					for i := 0; i < 4; i++ {
-						d.Set(secondData)
+						d.Set(diodes.GenericDataType(&secondData))
 					}
 				})
 
 				It("wraps", func() {
-					Expect(d.Next()).To(Equal(secondData))
+					Expect(*(*[]byte)(d.Next())).To(Equal(secondData))
 				})
 
 				It("alerts for each dropped point", func() {
@@ -118,7 +119,7 @@ var _ = Describe("OneToOne", func() {
 					Expect(mockAlerter.AlertInput.Missed).To(Receive(Equal(5)))
 
 					for i := 0; i < 6; i++ {
-						d.Set(secondData)
+						d.Set(diodes.GenericDataType(&secondData))
 					}
 
 					d.Next()
@@ -140,7 +141,7 @@ var _ = Describe("OneToOne", func() {
 				Context("writer laps reader", func() {
 					BeforeEach(func() {
 						for i := 0; i < 5; i++ {
-							d.Set(secondData)
+							d.Set(diodes.GenericDataType(&secondData))
 						}
 						d.Next()
 					})

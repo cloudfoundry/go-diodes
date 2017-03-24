@@ -47,6 +47,12 @@ type spyDiode struct {
 	called   int
 }
 
+func (s *spyDiode) Set(data diodes.GenericDataType) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dataList = append(s.dataList, *(*[]byte)(data))
+}
+
 func (s *spyDiode) TryNext() (diodes.GenericDataType, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

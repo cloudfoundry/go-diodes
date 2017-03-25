@@ -77,10 +77,12 @@ var _ = Describe("ManyToOne", func() {
 				Expect(spy.AlertInput.Missed).To(Receive(Equal(5)))
 
 				for i := 0; i < 6; i++ {
-					d.Set(diodes.GenericDataType(&secondData))
+					j := i
+					d.Set(diodes.GenericDataType(&j))
 				}
 
-				d.TryNext()
+				data, _ := d.TryNext()
+				Expect(*(*int)(data)).To(Equal(5))
 				Expect(spy.AlertInput.Missed).To(Receive(Equal(5)))
 			})
 

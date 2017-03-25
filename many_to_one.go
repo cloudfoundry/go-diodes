@@ -1,6 +1,7 @@
 package diodes
 
 import (
+	"log"
 	"sync/atomic"
 	"unsafe"
 )
@@ -39,7 +40,8 @@ func (d *ManyToOne) Set(data GenericDataType) {
 
 		if old != nil &&
 			(*bucket)(old) != nil &&
-			(*bucket)(old).seq != writeIndex-uint64(len(d.buffer)) {
+			(*bucket)(old).seq > writeIndex-uint64(len(d.buffer)) {
+			log.Println("Diode set collision: consider using a larger diode")
 			continue
 		}
 
@@ -49,6 +51,7 @@ func (d *ManyToOne) Set(data GenericDataType) {
 		}
 
 		if !atomic.CompareAndSwapPointer(&d.buffer[idx], old, unsafe.Pointer(newBucket)) {
+			log.Println("Diode set collision: consider using a larger diode")
 			continue
 		}
 

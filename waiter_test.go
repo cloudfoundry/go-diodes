@@ -1,8 +1,11 @@
 package diodes_test
 
 import (
-	"github.com/cloudfoundry/diodes"
 	"time"
+
+	"golang.org/x/net/context"
+
+	"github.com/cloudfoundry/diodes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,5 +37,29 @@ var _ = Describe("Waiter", func() {
 		}()
 
 		Expect(*(*[]byte)(w.Next())).To(Equal([]byte("a")))
+	})
+
+	It("cancels Next() with context", func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		w = diodes.NewWaiter(spy, diodes.WithWaiterContext(ctx))
+		cancel()
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			w.Next()
+		}()
+
+		Eventually(done).Should(BeClosed())
+	})
+
+	It("cancels current Next() with context", func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		w = diodes.NewWaiter(spy, diodes.WithWaiterContext(ctx))
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			cancel()
+		}()
+
+		Expect(w.Next() == nil).To(BeTrue())
 	})
 })

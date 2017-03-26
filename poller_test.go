@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/cloudfoundry/diodes"
 
 	. "github.com/onsi/ginkgo"
@@ -37,6 +39,19 @@ var _ = Describe("Poller", func() {
 		}()
 
 		Expect(*(*[]byte)(p.Next())).To(Equal([]byte("a")))
+	})
+
+	It("cancels Next() with context", func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		p = diodes.NewPoller(spy, diodes.WithPollingContext(ctx))
+		cancel()
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			p.Next()
+		}()
+
+		Eventually(done).Should(BeClosed())
 	})
 })
 

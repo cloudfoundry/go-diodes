@@ -7,7 +7,7 @@ import (
 )
 
 // ManyToOne diode is optimal for many writers (go-routines B-n) and a single
-// reader (go-routine A).
+// reader (go-routine A). It is not thread safe for multiple readers.
 type ManyToOne struct {
 	buffer     []unsafe.Pointer
 	writeIndex uint64
@@ -62,27 +62,22 @@ func (d *ManyToOne) Set(data GenericDataType) {
 // TryNext will attempt to read from the next slot of the ring buffer.
 // If there is not data available, it will return (nil, false).
 func (d *ManyToOne) TryNext() (data GenericDataType, ok bool) {
-	readIndex := atomic.LoadUint64(&d.readIndex)
-	idx := readIndex % uint64(len(d.buffer))
-
-	value, ok := d.tryNext(idx)
-	if ok {
-		atomic.AddUint64(&d.readIndex, 1)
-	}
-	return value, ok
-}
-
-func (d *ManyToOne) tryNext(idx uint64) (GenericDataType, bool) {
+	idx := d.readIndex % uint64(len(d.buffer))
 	result := (*bucket)(atomic.SwapPointer(&d.buffer[idx], nil))
 
 	if result == nil {
 		return nil, false
 	}
-
-	if result.seq > d.readIndex {
-		d.alerter.Alert(int(result.seq - d.readIndex))
-		atomic.StoreUint64(&d.readIndex, result.seq)
+	if result.seq < d.readIndex {
+		return nil, false
 	}
 
+	if result.seq > d.readIndex {
+		dropped := result.seq - d.readIndex
+		d.readIndex = result.seq
+		d.alerter.Alert(int(dropped))
+	}
+
+	d.readIndex++
 	return result.data, true
 }

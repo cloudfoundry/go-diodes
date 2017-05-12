@@ -46,17 +46,19 @@ There are two things to consider when choosing a diode:
 
 ##### OneToOne
 
-The OneToOne diode is optimized for one producing (invoking `Set()`) go-routine
-and a (different) consuming (invoking `TryNext()`) go-routine.
+The OneToOne diode is meant to be used by one producing (invoking `Set()`)
+go-routine and a (different) consuming (invoking `TryNext()`) go-routine. It
+is not thread safe for multiple readers or writers.
 
 ##### ManyToOne
 
 The ManyToOne diode is optimized for many producing (invoking `Set()`)
-go-routines and a single consuming (invoking `TryNext()`) go-routine.
+go-routines and a single consuming (invoking `TryNext()`) go-routine. It is
+not thread safe for multiple readers.
 
 It is recommended to have a larger diode buffer size if the number of producers
 is high. This is to avoid the diode from having to mitigate write collisions
-(it will emit a log line if this occurs).
+(it will call its alert function if this occurs).
 
 ### Access Layer
 

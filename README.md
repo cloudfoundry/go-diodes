@@ -46,8 +46,8 @@ There are two things to consider when choosing a diode:
 
 ##### OneToOne
 
-The OneToOne diode is optimized for one producing (invoking `Set()`) go-routine
-and a (different) consuming (invoking `TryNext()`) go-routine.
+The OneToOne diode is meant to be used by one producing (invoking `Set()`)
+go-routine and a (different) consuming (invoking `TryNext()`) go-routine.
 
 ##### ManyToOne
 

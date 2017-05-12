@@ -8,14 +8,14 @@ import (
 // GenericDataType is the data type the diodes operate on.
 type GenericDataType unsafe.Pointer
 
-// Alerter is used to report how many values were overwritten
-// since the last write.
+// Alerter is used to report how many values were overwritten since the
+// last write.
 type Alerter interface {
 	Alert(missed int)
 }
 
-// AlerFunc type is an adapter to allow the use of
-// ordinary functions as Alert handlers.
+// AlerFunc type is an adapter to allow the use of ordinary functions as
+// Alert handlers.
 type AlertFunc func(missed int)
 
 // Alert calls f(missed)
@@ -28,7 +28,8 @@ type bucket struct {
 	seq  uint64
 }
 
-// OneToOne diode is optimized for a single writer and a single reader.
+// OneToOne diode is meant to be used by a single reader and a single writer.
+// It is not thread safe if used otherwise.
 type OneToOne struct {
 	buffer     []unsafe.Pointer
 	writeIndex uint64
@@ -36,58 +37,47 @@ type OneToOne struct {
 	alerter    Alerter
 }
 
-// NewOneToOne creates a new diode (ring buffer). The OneToOne diode
-// is optimzed for a single writer (on go-routine A) and a single reader
-// (on go-routine B).
+// NewOneToOne creates a new diode is meant to be used by a single reader and
+// a single writer.
 func NewOneToOne(size int, alerter Alerter) *OneToOne {
-	d := &OneToOne{
+	return &OneToOne{
 		buffer:  make([]unsafe.Pointer, size),
 		alerter: alerter,
 	}
-
-	// Start write index at the value before 0
-	// to allow the first write to use AddUint64
-	// and still have a beginning index of 0
-	d.writeIndex = ^d.writeIndex
-	return d
 }
 
 // Set sets the data in the next slot of the ring buffer.
 func (d *OneToOne) Set(data GenericDataType) {
-	writeIndex := atomic.AddUint64(&d.writeIndex, 1)
-	idx := writeIndex % uint64(len(d.buffer))
+	idx := d.writeIndex % uint64(len(d.buffer))
+
 	newBucket := &bucket{
 		data: data,
-		seq:  writeIndex,
+		seq:  d.writeIndex,
 	}
+	d.writeIndex++
 
 	atomic.StorePointer(&d.buffer[idx], unsafe.Pointer(newBucket))
 }
 
 // TryNext will attempt to read from the next slot of the ring buffer.
-// If there is not data available, it will return (nil, false).
+// If there is no data available, it will return (nil, false).
 func (d *OneToOne) TryNext() (data GenericDataType, ok bool) {
-	readIndex := atomic.LoadUint64(&d.readIndex)
-	idx := readIndex % uint64(len(d.buffer))
-
-	value, ok := d.tryNext(idx)
-	if ok {
-		atomic.AddUint64(&d.readIndex, 1)
-	}
-	return value, ok
-}
-
-func (d *OneToOne) tryNext(idx uint64) (GenericDataType, bool) {
+	idx := d.readIndex % uint64(len(d.buffer))
 	result := (*bucket)(atomic.SwapPointer(&d.buffer[idx], nil))
 
 	if result == nil {
 		return nil, false
 	}
-
-	if result.seq > d.readIndex {
-		d.alerter.Alert(int(result.seq - d.readIndex))
-		atomic.StoreUint64(&d.readIndex, result.seq)
+	if result.seq < d.readIndex {
+		return nil, false
 	}
 
+	if result.seq > d.readIndex {
+		dropped := result.seq - d.readIndex
+		d.readIndex = result.seq
+		d.alerter.Alert(int(dropped))
+	}
+
+	d.readIndex++
 	return result.data, true
 }

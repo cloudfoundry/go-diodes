@@ -113,3 +113,34 @@ var _ = Describe("ManyToOne", func() {
 		})
 	})
 })
+
+var _ = Describe("reader ahead of writer", func() {
+	It("must not occur after alerting", func() {
+		length := 4
+		spy := newSpyAlerter()
+		d := diodes.NewManyToOne(length, spy)
+		data := []byte("some-data")
+		genData := diodes.GenericDataType(&data)
+
+		By("filling up the buffer")
+		for i := 0; i < length; i++ {
+			d.Set(genData)
+		}
+
+		By("overwriting the first index")
+		d.Set(genData)
+
+		By("having reader fast forward")
+		Expect(spy.AlertInput.Missed).To(BeEmpty())
+		_, ok := d.TryNext()
+		Expect(ok).To(BeTrue())
+		Expect(spy.AlertInput.Missed).To(Receive(Equal(4)))
+
+		By("failing reads until the writer writes over skipped values")
+		_, ok = d.TryNext()
+		Expect(ok).To(BeFalse())
+		d.Set(genData)
+		_, ok = d.TryNext()
+		Expect(ok).To(BeTrue())
+	})
+})

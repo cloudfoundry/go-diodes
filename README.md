@@ -11,7 +11,7 @@ invoking `Set()` on a diode never blocks.
 
 ```
 go get code.cloudfoundry.org/diodes
-``
+```
 
 ```go
 d := diodes.NewPoller(diodes.NewOneToOne(b.N, diodes.AlertFunc(func(missed int) {

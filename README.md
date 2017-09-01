@@ -8,8 +8,12 @@ A diode does its best to not "push back" on the producer. In other words,
 invoking `Set()` on a diode never blocks.
 
 ### Example
-```go
 
+```
+go get code.cloudfoundry.org/diodes
+``
+
+```go
 d := diodes.NewPoller(diodes.NewOneToOne(b.N, diodes.AlertFunc(func(missed int) {
 	log.Printf("Dropped %d messages", missed)
 })))

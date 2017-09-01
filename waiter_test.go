@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/cloudfoundry/diodes"
+	"code.cloudfoundry.org/diodes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

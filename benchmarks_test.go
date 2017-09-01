@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudfoundry/diodes"
+	"code.cloudfoundry.org/diodes"
 )
 
 func TestMain(m *testing.M) {

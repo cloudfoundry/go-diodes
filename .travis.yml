@@ -1,0 +1,16 @@
+language: go
+
+go:
+  - 1.8.x
+  - 1.9.x
+  - master
+
+install:
+- go get -d -v -t code.cloudfoundry.org/go-diodes/...
+- go generate code.cloudfoundry.org/go-diodes/...
+
+script: go test code.cloudfoundry.org/go-diodes/...
+
+matrix:
+  allow_failures:
+  - go: master

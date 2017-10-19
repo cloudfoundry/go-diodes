@@ -10,7 +10,7 @@ invoking `Set()` on a diode never blocks.
 ### Example
 
 ```
-go get code.cloudfoundry.org/diodes
+go get code.cloudfoundry.org/go-diodes
 ```
 
 ```go

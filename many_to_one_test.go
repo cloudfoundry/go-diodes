@@ -1,7 +1,7 @@
 package diodes_test
 
 import (
-	"code.cloudfoundry.org/diodes"
+	"code.cloudfoundry.org/go-diodes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -1,4 +1,5 @@
 # diodes
+[![GoDoc][go-doc-badge]][go-doc] [![travis][travis-badge]][travis]
 
 Diodes are ring buffers manipulated via atomics.
 
@@ -91,3 +92,8 @@ channels. To run them:
 ```
 go test -bench=. -run=NoTest
 ```
+
+[go-doc-badge]:             https://godoc.org/code.cloudfoundry.org/go-diodes?status.svg
+[go-doc]:                   https://godoc.org/code.cloudfoundry.org/go-diodes
+[travis-badge]:             https://travis-ci.org/cloudfoundry-incubator/go-diodes.svg?branch=master
+[travis]:                   https://travis-ci.org/cloudfoundry-incubator/go-diodes?branch=master

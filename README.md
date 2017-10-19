@@ -95,5 +95,5 @@ go test -bench=. -run=NoTest
 
 [go-doc-badge]:             https://godoc.org/code.cloudfoundry.org/go-diodes?status.svg
 [go-doc]:                   https://godoc.org/code.cloudfoundry.org/go-diodes
-[travis-badge]:             https://travis-ci.org/cloudfoundry-incubator/go-diodes.svg?branch=master
-[travis]:                   https://travis-ci.org/cloudfoundry-incubator/go-diodes?branch=master
+[travis-badge]:             https://travis-ci.org/cloudfoundry/go-diodes.svg?branch=master
+[travis]:                   https://travis-ci.org/cloudfoundry/go-diodes?branch=master

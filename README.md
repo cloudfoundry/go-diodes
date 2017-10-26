@@ -1,12 +1,13 @@
-# diodes
+![diode][diode-logo]
+
 [![GoDoc][go-doc-badge]][go-doc] [![travis][travis-badge]][travis]
 
 Diodes are ring buffers manipulated via atomics.
 
 Diodes are optimized for high throughput scenarios where losing data is
-acceptable. Unlike a channel, a diode will overwrite data in lieu of blocking.
-A diode does its best to not "push back" on the producer. In other words,
-invoking `Set()` on a diode never blocks.
+acceptable. Unlike a channel, a diode will overwrite data on writes in lieu
+of blocking. A diode does its best to not "push back" on the producer.
+In other words, invoking `Set()` on a diode never blocks.
 
 ### Example
 
@@ -93,7 +94,8 @@ channels. To run them:
 go test -bench=. -run=NoTest
 ```
 
-[go-doc-badge]:             https://godoc.org/code.cloudfoundry.org/go-diodes?status.svg
-[go-doc]:                   https://godoc.org/code.cloudfoundry.org/go-diodes
-[travis-badge]:             https://travis-ci.org/cloudfoundry/go-diodes.svg?branch=master
-[travis]:                   https://travis-ci.org/cloudfoundry/go-diodes?branch=master
+[diode-logo]:   https://raw.githubusercontent.com/cloudfoundry/go-diodes/gh-pages/diode-logo.png
+[go-doc-badge]: https://godoc.org/code.cloudfoundry.org/go-diodes?status.svg
+[go-doc]:       https://godoc.org/code.cloudfoundry.org/go-diodes
+[travis-badge]: https://travis-ci.org/cloudfoundry/go-diodes.svg?branch=master
+[travis]:       https://travis-ci.org/cloudfoundry/go-diodes?branch=master

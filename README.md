@@ -94,6 +94,14 @@ channels. To run them:
 go test -bench=. -run=NoTest
 ```
 
+### Known Issues
+
+If a diode was to be written to `18446744073709551615+1` times it would overflow
+a `uint64`. This will cause problems if the size of the diode is not a power
+of two (`2^x`). If you write into a diode at the rate of one message every
+nanosecond, without restarting your process, it would take you 584.54 years to
+encounter this issue.
+
 [diode-logo]:   https://raw.githubusercontent.com/cloudfoundry/go-diodes/gh-pages/diode-logo.png
 [go-doc-badge]: https://godoc.org/code.cloudfoundry.org/go-diodes?status.svg
 [go-doc]:       https://godoc.org/code.cloudfoundry.org/go-diodes

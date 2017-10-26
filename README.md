@@ -24,7 +24,7 @@ go func() {
 	for i := 0; i < 1000; i++ {
 		// Warning: Do not use i. By taking the address,
 		// you would not get each value
-		j := i 		d.Set(diodes.GenericDataType(&data))
+		j := i
 		d.Set(diodes.GenericDataType(&j))
 	}
 }()

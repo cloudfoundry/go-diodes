@@ -22,7 +22,12 @@ func BenchmarkOneToOnePoller(b *testing.B) {
 		panic("Oops...")
 	})))
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	go func() {
+		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			data := []byte("some-data")
 			d.Set(diodes.GenericDataType(&data))
@@ -61,7 +66,12 @@ func BenchmarkManyToOnePoller(b *testing.B) {
 		panic("Oops...")
 	})))
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	go func() {
+		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			data := []byte("some-data")
 			d.Set(diodes.GenericDataType(&data))
@@ -98,7 +108,12 @@ func BenchmarkManyToOneWaiter(b *testing.B) {
 func BenchmarkChannel(b *testing.B) {
 	c := make(chan []byte, b.N)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	go func() {
+		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			data := []byte("some-data")
 			c <- data
@@ -117,6 +132,7 @@ func BenchmarkOneToOnePollerDrain(b *testing.B) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	go func() {
 		wg.Done()
 		for {

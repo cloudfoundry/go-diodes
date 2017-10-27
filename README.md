@@ -50,17 +50,17 @@ concrete shell for `[]byte`:
 
 ```go
 type OneToOne struct {
-	d *gendiodes.Poller
+	d *diodes.Poller
 }
 
-func NewOneToOne(size int, alerter gendiodes.Alerter) *OneToOne {
+func NewOneToOne(size int, alerter diodes.Alerter) *OneToOne {
 	return &OneToOne{
-		d: gendiodes.NewPoller(gendiodes.NewOneToOne(size, alerter)),
+		d: diodes.NewPoller(diodes.NewOneToOne(size, alerter)),
 	}
 }
 
 func (d *OneToOne) Set(data []byte) {
-	d.d.Set(gendiodes.GenericDataType(&data))
+	d.d.Set(diodes.GenericDataType(&data))
 }
 
 func (d *OneToOne) TryNext() ([]byte, bool) {

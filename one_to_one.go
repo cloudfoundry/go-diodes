@@ -14,7 +14,7 @@ type Alerter interface {
 	Alert(missed int)
 }
 
-// AlerFunc type is an adapter to allow the use of ordinary functions as
+// AlertFunc type is an adapter to allow the use of ordinary functions as
 // Alert handlers.
 type AlertFunc func(missed int)
 

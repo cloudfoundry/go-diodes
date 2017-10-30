@@ -25,7 +25,8 @@ func (f AlertFunc) Alert(missed int) {
 
 type bucket struct {
 	data GenericDataType
-	seq  uint64 // seq is the recorded write index at the time of writing
+	seq  uint64  // seq is the recorded write index at the time of writing
+	next *bucket // bookkeeping for free list
 }
 
 // OneToOne diode is meant to be used by a single reader and a single writer.
@@ -35,6 +36,7 @@ type OneToOne struct {
 	writeIndex uint64
 	readIndex  uint64
 	alerter    Alerter
+	fl         *bucketFreeList
 }
 
 // NewOneToOne creates a new diode is meant to be used by a single reader and
@@ -43,6 +45,7 @@ func NewOneToOne(size int, alerter Alerter) *OneToOne {
 	return &OneToOne{
 		buffer:  make([]unsafe.Pointer, size),
 		alerter: alerter,
+		fl:      &bucketFreeList{},
 	}
 }
 
@@ -50,10 +53,9 @@ func NewOneToOne(size int, alerter Alerter) *OneToOne {
 func (d *OneToOne) Set(data GenericDataType) {
 	idx := d.writeIndex % uint64(len(d.buffer))
 
-	newBucket := &bucket{
-		data: data,
-		seq:  d.writeIndex,
-	}
+	newBucket := d.fl.Get()
+	newBucket.data = data
+	newBucket.seq = d.writeIndex
 	d.writeIndex++
 
 	atomic.StorePointer(&d.buffer[idx], unsafe.Pointer(newBucket))
@@ -87,6 +89,7 @@ func (d *OneToOne) TryNext() (data GenericDataType, ok bool) {
 	//    `| 4 | 5 | 2 | 3 |` r: 7, w: 6
 	//
 	if result.seq < d.readIndex {
+		d.fl.Add(result)
 		return nil, false
 	}
 
@@ -119,5 +122,7 @@ func (d *OneToOne) TryNext() (data GenericDataType, ok bool) {
 	// equal to readIndex) or a value was read that caused a fast forward
 	// (where seq was greater than readIndex).
 	d.readIndex++
-	return result.data, true
+	data = result.data
+	d.fl.Add(result)
+	return data, true
 }

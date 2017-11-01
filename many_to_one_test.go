@@ -110,6 +110,19 @@ var _ = Describe("ManyToOne", func() {
 					Expect(spy.AlertInput.Missed).To(Receive(Equal(10)))
 				})
 			})
+
+			Context("writer laps reader with nil alerter", func() {
+				It("drops the alert", func() {
+					d = diodes.NewManyToOne(5, nil)
+					for i := 0; i < 10; i++ {
+						d.Set(diodes.GenericDataType(&secondData))
+					}
+
+					Expect(func() {
+						d.TryNext()
+					}).ToNot(Panic())
+				})
+			})
 		})
 	})
 })

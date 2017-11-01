@@ -141,7 +141,7 @@ func BenchmarkOneToOnePollerDrain(b *testing.B) {
 	}()
 
 	wg.Wait()
-	b.StartTimer()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		data := []byte("some-data")
@@ -164,7 +164,7 @@ func BenchmarkOneToOneWaiterDrain(b *testing.B) {
 	}()
 
 	wg.Wait()
-	b.StartTimer()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		data := []byte("some-data")
@@ -184,7 +184,7 @@ func BenchmarkChannelDrain(b *testing.B) {
 	}()
 
 	wg.Wait()
-	b.StartTimer()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		data := []byte("some-data")

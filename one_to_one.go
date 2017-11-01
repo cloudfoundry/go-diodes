@@ -38,8 +38,14 @@ type OneToOne struct {
 }
 
 // NewOneToOne creates a new diode is meant to be used by a single reader and
-// a single writer.
+// a single writer. The alerter is invoked on the read's go-routine. It is
+// called when it notices that the writer go-routine has passed it and wrote
+// over data. A nil can be used to ignore alerts.
 func NewOneToOne(size int, alerter Alerter) *OneToOne {
+	if alerter == nil {
+		alerter = AlertFunc(func(int) {})
+	}
+
 	return &OneToOne{
 		buffer:  make([]unsafe.Pointer, size),
 		alerter: alerter,

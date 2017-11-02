@@ -35,6 +35,9 @@ type OneToOne struct {
 	writeIndex uint64
 	readIndex  uint64
 	alerter    Alerter
+
+	buckets   []bucket
+	bucketIdx int
 }
 
 // NewOneToOne creates a new diode is meant to be used by a single reader and
@@ -43,6 +46,7 @@ func NewOneToOne(size int, alerter Alerter) *OneToOne {
 	return &OneToOne{
 		buffer:  make([]unsafe.Pointer, size),
 		alerter: alerter,
+		buckets: make([]bucket, 100),
 	}
 }
 
@@ -50,13 +54,29 @@ func NewOneToOne(size int, alerter Alerter) *OneToOne {
 func (d *OneToOne) Set(data GenericDataType) {
 	idx := d.writeIndex % uint64(len(d.buffer))
 
-	newBucket := &bucket{
-		data: data,
-		seq:  d.writeIndex,
-	}
+	bucketIdx := d.nextBucketIdx()
+	d.buckets[bucketIdx].data = data
+	d.buckets[bucketIdx].seq = d.writeIndex
+
 	d.writeIndex++
 
-	atomic.StorePointer(&d.buffer[idx], unsafe.Pointer(newBucket))
+	atomic.StorePointer(&d.buffer[idx], unsafe.Pointer(&d.buckets[bucketIdx]))
+}
+
+// nextBucketIdx gets the next bucket for the writing go-routine. Buckets
+// are allocated in batches to allow fewer overall heap allocations. Once
+// a batch of buckets are used (they are never returned), another batch
+// is allocated.
+func (d *OneToOne) nextBucketIdx() int {
+	if d.bucketIdx >= len(d.buckets) {
+		d.bucketIdx = 0
+		d.buckets = make([]bucket, 100)
+	}
+
+	i := d.bucketIdx
+	d.bucketIdx++
+
+	return i
 }
 
 // TryNext will attempt to read from the next slot of the ring buffer.

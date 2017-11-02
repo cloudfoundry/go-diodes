@@ -1,6 +1,7 @@
 package diodes_test
 
 import (
+	"crypto/rand"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	"code.cloudfoundry.org/go-diodes"
 )
+
+var randData = randDataGen()
 
 func TestMain(m *testing.M) {
 	log.SetOutput(ioutil.Discard)
@@ -29,8 +32,8 @@ func BenchmarkOneToOnePoller(b *testing.B) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
-			data := []byte("some-data")
-			d.Set(diodes.GenericDataType(&data))
+			data := randData(i)
+			d.Set(diodes.GenericDataType(data))
 		}
 	}()
 
@@ -51,8 +54,8 @@ func BenchmarkOneToOneWaiter(b *testing.B) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
-			data := []byte("some-data")
-			d.Set(diodes.GenericDataType(&data))
+			data := randData(i)
+			d.Set(diodes.GenericDataType(data))
 		}
 	}()
 
@@ -73,8 +76,8 @@ func BenchmarkManyToOnePoller(b *testing.B) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
-			data := []byte("some-data")
-			d.Set(diodes.GenericDataType(&data))
+			data := randData(i)
+			d.Set(diodes.GenericDataType(data))
 		}
 	}()
 
@@ -95,8 +98,8 @@ func BenchmarkManyToOneWaiter(b *testing.B) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
-			data := []byte("some-data")
-			d.Set(diodes.GenericDataType(&data))
+			data := randData(i)
+			d.Set(diodes.GenericDataType(data))
 		}
 	}()
 
@@ -115,8 +118,8 @@ func BenchmarkChannel(b *testing.B) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
-			data := []byte("some-data")
-			c <- data
+			data := randData(i)
+			c <- *data
 		}
 	}()
 
@@ -144,8 +147,8 @@ func BenchmarkOneToOnePollerDrain(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		data := []byte("some-data")
-		d.Set(diodes.GenericDataType(&data))
+		data := randData(i)
+		d.Set(diodes.GenericDataType(data))
 	}
 }
 
@@ -167,8 +170,8 @@ func BenchmarkOneToOneWaiterDrain(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		data := []byte("some-data")
-		d.Set(diodes.GenericDataType(&data))
+		data := randData(i)
+		d.Set(diodes.GenericDataType(data))
 	}
 }
 
@@ -187,9 +190,9 @@ func BenchmarkChannelDrain(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		data := []byte("some-data")
+		data := randData(i)
 		select {
-		case c <- data:
+		case c <- *data:
 		default:
 			drainChannel(c)
 		}
@@ -215,9 +218,11 @@ func BenchmarkManyWritersDiode(b *testing.B) {
 	wg.Wait()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		var i int
 		for pb.Next() {
-			data := []byte("some-data")
-			d.Set(diodes.GenericDataType(&data))
+			data := randData(i)
+			i++
+			d.Set(diodes.GenericDataType(data))
 		}
 	})
 }
@@ -238,10 +243,12 @@ func BenchmarkManyWritersChannel(b *testing.B) {
 	wg.Wait()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		var i int
 		for pb.Next() {
-			data := []byte("some-data")
+			data := randData(i)
+			i++
 			select {
-			case c <- data:
+			case c <- *data:
 			default:
 				drainChannel(c)
 			}
@@ -256,5 +263,21 @@ func drainChannel(c chan []byte) {
 		default:
 			return
 		}
+	}
+}
+
+func randDataGen() func(int) *[]byte {
+	var (
+		data [][]byte
+	)
+
+	for j := 0; j < 5; j++ {
+		buffer := make([]byte, 100)
+		rand.Read(buffer)
+		data = append(data, buffer)
+	}
+
+	return func(i int) *[]byte {
+		return &data[i%len(data)]
 	}
 }

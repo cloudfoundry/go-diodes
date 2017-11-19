@@ -37,6 +37,8 @@ func BenchmarkOneToOnePoller(b *testing.B) {
 		}
 	}()
 
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		d.Next()
 	}
@@ -58,6 +60,8 @@ func BenchmarkOneToOneWaiter(b *testing.B) {
 			d.Set(diodes.GenericDataType(data))
 		}
 	}()
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		d.Next()
@@ -81,6 +85,8 @@ func BenchmarkManyToOnePoller(b *testing.B) {
 		}
 	}()
 
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		d.Next()
 	}
@@ -103,6 +109,8 @@ func BenchmarkManyToOneWaiter(b *testing.B) {
 		}
 	}()
 
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		d.Next()
 	}
@@ -122,6 +130,8 @@ func BenchmarkChannel(b *testing.B) {
 			c <- *data
 		}
 	}()
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		<-c

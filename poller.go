@@ -1,9 +1,8 @@
 package diodes
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Diode is any implementation of a diode.

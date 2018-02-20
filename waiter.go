@@ -1,9 +1,8 @@
 package diodes
 
 import (
+	"context"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 // Waiter will use a conditional mutex to alert the reader to when data is

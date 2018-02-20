@@ -1,9 +1,8 @@
 package diodes_test
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"code.cloudfoundry.org/go-diodes"
 

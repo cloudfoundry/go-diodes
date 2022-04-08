@@ -133,7 +133,6 @@ polling (sleeping) may be hard on the scheduler.
 The Waiter uses a conditional mutex to manage when the reader is alerted
 of new data. While this method is great for the scheduler, it does have
 extra overhead for the producer. Therefore, it is better suited for situations
-where you have several diodes and can afford slightly slower producers.
 
 ### Benchmarks
 

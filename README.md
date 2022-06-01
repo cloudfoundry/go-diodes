@@ -2,6 +2,8 @@
 
 [![GoDoc][go-doc-badge]][go-doc]
 
+If you have any questions, or want to get attention for a PR or issue please reach out on the [#logging-and-metrics channel in the cloudfoundry slack](https://cloudfoundry.slack.com/archives/CUW93AF3M)
+
 Diodes are ring buffers manipulated via atomics.
 
 Diodes are optimized for high throughput scenarios where losing data is

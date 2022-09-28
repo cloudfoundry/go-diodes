@@ -1,7 +1,7 @@
 ---
 linters:
   enable:
-  # Checks for non-ASCII identifiers
+  # Checks for non-ASCII identifiers.
   - asciicheck
   # Computes and checks the cyclomatic complexity of functions.
   - gocyclo
@@ -11,7 +11,7 @@ linters:
 linters-settings:
   gocyclo:
     # Minimal code complexity to report.
-    # https://github.com/fzipp/gocyclo#readme
+    # Default: 30 (but 10-20 recommended).
     min-complexity: 20
 
 issues:

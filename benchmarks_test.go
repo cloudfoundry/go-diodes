@@ -2,7 +2,7 @@ package diodes_test
 
 import (
 	"crypto/rand"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -15,7 +15,7 @@ import (
 var randData = randDataGen()
 
 func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 
 	os.Exit(m.Run())
 }
@@ -283,7 +283,7 @@ func randDataGen() func(int) *[]byte {
 
 	for j := 0; j < 5; j++ {
 		buffer := make([]byte, 100)
-		rand.Read(buffer)
+		rand.Read(buffer) //nolint:errcheck
 		data = append(data, buffer)
 	}
 

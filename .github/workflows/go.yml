@@ -17,7 +17,7 @@ jobs:
       with:
         go-version-file: 'go.mod'
         check-latest: true
-    - run: go run github.com/onsi/ginkgo/v2/ginkgo -r --procs=2 --compilers=2 --randomize-all --randomize-suites --fail-on-pending --keep-going --race --trace
+    - run: go test -race ./...
 
   vet:
     runs-on: ubuntu-latest

@@ -20,14 +20,14 @@ func (fr *fakeReporter) Alert(dropped uint64) {
 }
 func (fr *fakeReporter) Warn(msg string) {}
 
-func TestReporter(t *testing.T) {
+func TestWithReporter(t *testing.T) {
 	done := make(chan struct{})
 	fr := &fakeReporter{done: done}
-	d := New(5, WithReporter(fr))
+	d := New[string](5, WithReporter(fr))
 
 	for i := range [7]int{} {
 		s := fmt.Sprintf("test-%d", i)
-		d.Set(GenericData(&s))
+		d.Set(&s)
 	}
 
 	_, _ = d.TryNext()

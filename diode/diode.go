@@ -5,18 +5,15 @@ import (
 	"unsafe"
 )
 
-// GenericData is the data type the diode operates on.
-type GenericData unsafe.Pointer
-
-type bucket struct {
-	data GenericData
+type bucket[T any] struct {
+	data *T     // The data stored in this bucket.
 	seq  uint64 // The write index at the time of writing.
 }
 
 // Diode is a ring buffer manipulated via atomics and optimized for optimized
 // for high throughput scenarios where losing data is acceptable. A diode does
 // its best to not "push back" on the producer.
-type Diode struct {
+type Diode[T any] struct {
 	buf      []unsafe.Pointer
 	writeIdx uint64
 	readIdx  uint64
@@ -24,8 +21,8 @@ type Diode struct {
 }
 
 // New creates a diode with the given size and options.
-func New(size int, opts ...Option) *Diode {
-	d := &Diode{
+func New[T any](size int, opts ...Option) *Diode[T] {
+	d := &Diode[T]{
 		buf: make([]unsafe.Pointer, size),
 	}
 
@@ -41,45 +38,41 @@ func New(size int, opts ...Option) *Diode {
 }
 
 // Set sets the data in the next slot of the ring buffer.
-func (d *Diode) Set(gd GenericData) {
+func (d *Diode[T]) Set(data *T) {
 	if d.opts.safe {
-		d.setSafely(gd)
+		d.setSafely(data)
 	} else {
-		d.set(gd)
+		d.set(data)
 	}
 }
 
-func (d *Diode) set(gd GenericData) {
+func (d *Diode[T]) set(data *T) {
+	d.writeIdx++
 	idx := d.writeIdx % uint64(len(d.buf))
-
-	newBucket := &bucket{
-		data: gd,
+	b := &bucket[T]{
+		data: data,
 		seq:  d.writeIdx,
 	}
-	d.writeIdx++
-
-	atomic.StorePointer(&d.buf[idx], unsafe.Pointer(newBucket))
+	atomic.StorePointer(&d.buf[idx], unsafe.Pointer(b))
 }
 
-func (d *Diode) setSafely(gd GenericData) {
+func (d *Diode[T]) setSafely(data *T) {
 	for {
-		writeIndex := atomic.AddUint64(&d.writeIdx, 1)
-		idx := writeIndex % uint64(len(d.buf))
+		writeIdx := atomic.AddUint64(&d.writeIdx, 1)
+		idx := writeIdx % uint64(len(d.buf))
 		old := atomic.LoadPointer(&d.buf[idx])
-
 		if old != nil &&
-			(*bucket)(old) != nil &&
-			(*bucket)(old).seq > writeIndex-uint64(len(d.buf)) {
+			(*bucket[T])(old) != nil &&
+			(*bucket[T])(old).seq > writeIdx-uint64(len(d.buf)) {
 			go d.opts.rep.Warn("diode set collision (consider using a larger diode)")
 			continue
 		}
 
-		newBucket := &bucket{
-			data: gd,
-			seq:  writeIndex,
+		b := &bucket[T]{
+			data: data,
+			seq:  writeIdx,
 		}
-
-		if !atomic.CompareAndSwapPointer(&d.buf[idx], old, unsafe.Pointer(newBucket)) {
+		if !atomic.CompareAndSwapPointer(&d.buf[idx], old, unsafe.Pointer(b)) {
 			go d.opts.rep.Warn("diode set collision (consider using a larger diode)")
 			continue
 		}
@@ -88,12 +81,11 @@ func (d *Diode) setSafely(gd GenericData) {
 	}
 }
 
-// TryNext will attempt to read from the next slot of the ring buffer. If there
-// is not data available, it will return (nil, false).
-func (d *Diode) TryNext() (gd GenericData, ok bool) {
+// TryNext will attempt to read data from the next slot of the ring buffer.
+func (d *Diode[T]) TryNext() (data *T, ok bool) {
 	// Read a value from the ring buffer based on the readIndex.
 	idx := d.readIdx % uint64(len(d.buf))
-	result := (*bucket)(atomic.SwapPointer(&d.buf[idx], nil))
+	result := (*bucket[T])(atomic.SwapPointer(&d.buf[idx], nil))
 
 	// When the result is nil that means the writer has not had the
 	// opportunity to write a value into the diode. This value must be ignored
@@ -148,5 +140,5 @@ func (d *Diode) TryNext() (gd GenericData, ok bool) {
 	// (where seq was greater than readIdx).
 	//
 	d.readIdx++
-	return result.data, true
+	return (*T)(result.data), true
 }

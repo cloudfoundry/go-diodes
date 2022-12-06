@@ -10,14 +10,17 @@ type bucket[T any] struct {
 	seq  uint64 // The write index at the time of writing.
 }
 
-// Diode is a ring buffer manipulated via atomics and optimized for optimized
-// for high throughput scenarios where losing data is acceptable. A diode does
-// its best to not "push back" on the producer.
+// Diode is a ring buffer.
 type Diode[T any] struct {
-	buf      []unsafe.Pointer
+	// The Diode's buffer; it's length determines size of the diode.
+	buf []unsafe.Pointer
+
+	// Indexes to write to or read from next.
 	writeIdx uint64
 	readIdx  uint64
-	opts     options
+
+	// Other options.
+	opts options
 }
 
 // New creates a diode with the given size and options.
@@ -34,10 +37,16 @@ func New[T any](size int, opts ...Option) *Diode[T] {
 		d.opts.rep = reporter{}
 	}
 
+	// Start write index at the value before 0
+	// to allow the first write to use AddUint64
+	// and still have a beginning index of 0
+	d.writeIdx = ^d.writeIdx
+
 	return d
 }
 
-// Set sets the data in the next slot of the ring buffer.
+// Set sets the data into the next slot of the ring buffer. This function is
+// only thread-safe if the Diode was created WithManyWriters.
 func (d *Diode[T]) Set(data *T) {
 	if d.opts.safe {
 		d.setSafely(data)
@@ -46,6 +55,8 @@ func (d *Diode[T]) Set(data *T) {
 	}
 }
 
+// set sets the data quickly into the next slot of the ring buffer. This is not
+// a thread-safe function.
 func (d *Diode[T]) set(data *T) {
 	d.writeIdx++
 	idx := d.writeIdx % uint64(len(d.buf))
@@ -56,6 +67,8 @@ func (d *Diode[T]) set(data *T) {
 	atomic.StorePointer(&d.buf[idx], unsafe.Pointer(b))
 }
 
+// setSafely will continue to try to set data into the next slot of the ring
+// buffer until it succeeds.
 func (d *Diode[T]) setSafely(data *T) {
 	for {
 		writeIdx := atomic.AddUint64(&d.writeIdx, 1)
@@ -81,7 +94,8 @@ func (d *Diode[T]) setSafely(data *T) {
 	}
 }
 
-// TryNext will attempt to read data from the next slot of the ring buffer.
+// TryNext will attempt to read data from the next slot of the ring buffer. This
+// method is not thread-safe.
 func (d *Diode[T]) TryNext() (data *T, ok bool) {
 	// Read a value from the ring buffer based on the readIndex.
 	idx := d.readIdx % uint64(len(d.buf))

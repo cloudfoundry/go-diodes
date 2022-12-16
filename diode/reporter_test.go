@@ -21,6 +21,8 @@ func (fr *fakeReporter) Alert(dropped uint64) {
 func (fr *fakeReporter) Warn(msg string) {}
 
 func TestWithReporter(t *testing.T) {
+	t.Parallel()
+
 	done := make(chan struct{})
 	fr := &fakeReporter{done: done}
 	d := New[string](5, WithReporter(fr))

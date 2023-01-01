@@ -1,7 +1,9 @@
 package diode
 
 import (
+	"context"
 	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -155,4 +157,25 @@ func (d *Diode[T]) TryNext() (data *T, ok bool) {
 	//
 	d.readIdx++
 	return (*T)(result.data), true
+}
+
+// Poll will attempt to read data from the next slot of the ring buffer on a set
+// interval until it succeeds, or until the provided context is closed. This
+// method is not thread-safe.
+func (d *Diode[T]) Poll(ctx context.Context, interval time.Duration) (data *T, ok bool) {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, false
+		default:
+		}
+
+		data, ok := d.TryNext()
+		if !ok {
+			time.Sleep(interval)
+			continue
+		}
+
+		return data, true
+	}
 }

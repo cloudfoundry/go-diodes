@@ -60,18 +60,16 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func TestSet_PointerCopy(t *testing.T) {
+func TestSet_WithCopy(t *testing.T) {
 	t.Parallel()
 
-	d := New[string](5)
+	d := New[string](5, WithCopy())
 
 	data := "test"
 	d.Set(&data)
 
-	oldData := data
-	data = "example"
-	if b := (*bucket[string])(d.buf[d.writeIdx]); *b.data != oldData {
-		t.Errorf(`data is not copied: buf[0].data = %s; want %s`, *b.data, oldData)
+	if b := (*bucket[string])(d.buf[d.writeIdx]); b.data == &data {
+		t.Errorf("data is not copied: buf[0].data == result == %+v", b.data)
 	}
 }
 
@@ -138,24 +136,34 @@ func BenchmarkSet(b *testing.B) {
 	data := "test"
 
 	tests := []struct {
-		name string
-		d    *Diode[string]
+		name            string
+		withManyWriters bool
+		withCopy        bool
 	}{
-		{name: "one writer", d: New[string](5)},
-		{name: "many writers", d: New[string](5, WithManyWriters())},
+		{name: "one writer with copy", withManyWriters: false, withCopy: true},
+		{name: "one writer", withManyWriters: false, withCopy: false},
+		{name: "many writers with copy", withManyWriters: true, withCopy: true},
+		{name: "many writers", withManyWriters: true, withCopy: false},
 	}
 
 	for _, tc := range tests {
 		tc := tc
-		for k := 10; k < 10001; k *= 10 {
-			b.Run(fmt.Sprintf("%s %d", tc.name, k), func(b *testing.B) {
-				b.ResetTimer()
-
-				for i := 0; i < b.N; i++ {
-					tc.d.Set(&data)
-				}
-			})
+		var opts []Option
+		if tc.withManyWriters {
+			opts = append(opts, WithManyWriters())
 		}
+		if tc.withCopy {
+			opts = append(opts, WithCopy())
+		}
+		d := New[string](100, opts...)
+
+		b.Run(tc.name, func(b *testing.B) {
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				d.Set(&data)
+			}
+		})
 	}
 }
 

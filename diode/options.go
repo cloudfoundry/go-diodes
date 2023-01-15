@@ -3,6 +3,7 @@ package diode
 type options struct {
 	rep  Reporter
 	safe bool
+	copy bool
 }
 
 // Option configures how we set up the diode.
@@ -32,11 +33,22 @@ func WithReporter(r Reporter) Option {
 
 // WithManyWriters returns an Option which tells the diode to use a many-to-one
 // configuration that is safe for many writers (on go-routines B-n), and a
-// single reader (on go-routine A).
+// single reader (on go-routine A). Note that this option affects performance.
 func WithManyWriters() Option {
 	return &optionFunc{
 		f: func(o *options) {
 			o.safe = true
+		},
+	}
+}
+
+// WithCopy returns an Option which tells the diode to make copies of data
+// rather than reusing pointers passed into Set. Note that this option affects
+// performance.
+func WithCopy() Option {
+	return &optionFunc{
+		f: func(o *options) {
+			o.copy = true
 		},
 	}
 }

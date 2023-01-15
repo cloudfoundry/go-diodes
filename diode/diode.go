@@ -50,12 +50,18 @@ func New[T any](size int, opts ...Option) *Diode[T] {
 // Set sets the data into the next slot of the ring buffer. This function is
 // only thread-safe if the Diode was created WithManyWriters.
 func (d *Diode[T]) Set(data *T) {
-	copy := *data
+	setFunc := d.set
 	if d.opts.safe {
-		d.safelySet(&copy)
-	} else {
-		d.set(&copy)
+		setFunc = d.safelySet
 	}
+
+	if d.opts.copy {
+		copy := *data
+		setFunc(&copy)
+		return
+	}
+
+	setFunc(data)
 }
 
 // set sets the data quickly into the next slot of the ring buffer. This is not

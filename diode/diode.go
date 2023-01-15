@@ -50,10 +50,11 @@ func New[T any](size int, opts ...Option) *Diode[T] {
 // Set sets the data into the next slot of the ring buffer. This function is
 // only thread-safe if the Diode was created WithManyWriters.
 func (d *Diode[T]) Set(data *T) {
+	copy := *data
 	if d.opts.safe {
-		d.setSafely(data)
+		d.safelySet(&copy)
 	} else {
-		d.set(data)
+		d.set(&copy)
 	}
 }
 
@@ -69,9 +70,9 @@ func (d *Diode[T]) set(data *T) {
 	atomic.StorePointer(&d.buf[idx], unsafe.Pointer(b))
 }
 
-// setSafely will continue to try to set data into the next slot of the ring
+// safelySet will continue to try to set data into the next slot of the ring
 // buffer until it succeeds.
-func (d *Diode[T]) setSafely(data *T) {
+func (d *Diode[T]) safelySet(data *T) {
 	for {
 		writeIdx := atomic.AddUint64(&d.writeIdx, 1)
 		idx := writeIdx % uint64(len(d.buf))

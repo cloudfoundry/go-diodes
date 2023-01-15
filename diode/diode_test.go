@@ -48,7 +48,7 @@ func TestSet(t *testing.T) {
 			tc.d.Set(&data)
 
 			if b := (*bucket[string])(tc.d.buf[tc.d.writeIdx]); *b.data != data || b.seq != tc.d.writeIdx {
-				t.Errorf(`buf[0] = {data: %+v, seq: %d}; want {data: test, seq: %d}`, *b.data, b.seq, tc.d.writeIdx)
+				t.Errorf(`buf[0] = {data: %s, seq: %d}; want {data: %s, seq: %d}`, *b.data, b.seq, data, tc.d.writeIdx)
 			}
 			if tc.d.readIdx != oldReadIdx {
 				t.Errorf("readIdx = %d; want %d", tc.d.readIdx, oldReadIdx)
@@ -57,6 +57,21 @@ func TestSet(t *testing.T) {
 				t.Errorf("writeIdx = %d; want %d", tc.d.writeIdx, oldWriteIdx+1)
 			}
 		})
+	}
+}
+
+func TestSet_PointerCopy(t *testing.T) {
+	t.Parallel()
+
+	d := New[string](5)
+
+	data := "test"
+	d.Set(&data)
+
+	oldData := data
+	data = "example"
+	if b := (*bucket[string])(d.buf[d.writeIdx]); *b.data != oldData {
+		t.Errorf(`data is not copied: buf[0].data = %s; want %s`, *b.data, oldData)
 	}
 }
 
@@ -101,6 +116,21 @@ func TestTryNext(t *testing.T) {
 				t.Errorf("TryNext() = %s, _; want %s, _", *result, tc.result)
 			}
 		})
+	}
+}
+
+func TestTryNext_Overwrite(t *testing.T) {
+	t.Parallel()
+
+	d := New[string](5)
+
+	data := "test"
+	d.Set(&data)
+
+	result, _ := d.TryNext()
+	bucket := (*bucket[string])(d.buf[0])
+	if bucket != nil && result == bucket.data {
+		t.Errorf("old data is not overwritten: result == buf[0].data")
 	}
 }
 

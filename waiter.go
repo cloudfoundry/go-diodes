@@ -2,15 +2,13 @@ package diodes
 
 import (
 	"context"
-	"sync"
 )
 
-// Waiter will use a conditional mutex to alert the reader to when data is
+// Waiter will use a channel signal to alert the reader to when data is
 // available.
 type Waiter struct {
 	Diode
-	mu  sync.Mutex
-	c   *sync.Cond
+	c   chan struct{}
 	ctx context.Context
 }
 
@@ -30,54 +28,44 @@ func WithWaiterContext(ctx context.Context) WaiterConfigOption {
 func NewWaiter(d Diode, opts ...WaiterConfigOption) *Waiter {
 	w := new(Waiter)
 	w.Diode = d
-	w.c = sync.NewCond(&w.mu)
+	w.c = make(chan struct{}, 1)
 	w.ctx = context.Background()
 
 	for _, opt := range opts {
 		opt(w)
 	}
 
-	go func() {
-		<-w.ctx.Done()
-		w.c.Broadcast()
-	}()
-
 	return w
 }
 
-// Set invokes the wrapped diode's Set with the given data and uses Broadcast
+// Set invokes the wrapped diode's Set with the given data and uses broadcast
 // to wake up any readers.
 func (w *Waiter) Set(data GenericDataType) {
 	w.Diode.Set(data)
-	w.c.Broadcast()
+	w.broadcast()
 }
 
-// Next returns the next data point on the wrapped diode. If there is not any
-// new data, it will Wait for set to be called or the context to be done.
-// If the context is done, then nil will be returned.
-func (w *Waiter) Next() GenericDataType {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	for {
-		data, ok := w.Diode.TryNext()
-		if !ok {
-			if w.isDone() {
-				return nil
-			}
-
-			w.c.Wait()
-			continue
-		}
-		return data
+// broadcast sends to the channel if it can.
+func (w *Waiter) broadcast() {
+	select {
+	case w.c <- struct{}{}:
+	default:
 	}
 }
 
-func (w *Waiter) isDone() bool {
-	select {
-	case <-w.ctx.Done():
-		return true
-	default:
-		return false
+// Next returns the next data point on the wrapped diode. If there is no new
+// data, it will wait for Set to be called or the context to be done. If the
+// context is done, then nil will be returned.
+func (w *Waiter) Next() GenericDataType {
+	for {
+		data, ok := w.Diode.TryNext()
+		if ok {
+			return data
+		}
+		select {
+		case <-w.ctx.Done():
+			return nil
+		case <-w.c:
+		}
 	}
 }

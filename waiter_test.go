@@ -21,44 +21,65 @@ var _ = Describe("Waiter", func() {
 		w = diodes.NewWaiter(spy)
 	})
 
-	It("returns the available result", func() {
-		spy.dataList = [][]byte{[]byte("a"), []byte("b")}
+	Describe("Next", func() {
+		BeforeEach(func() {
+			spy.dataList = [][]byte{[]byte("a"), []byte("b")}
+		})
 
-		Expect(*(*[]byte)(w.Next())).To(Equal([]byte("a")))
-		Expect(*(*[]byte)(w.Next())).To(Equal([]byte("b")))
-	})
+		It("returns available data points from the wrapped diode", func() {
+			Expect(spy.called).To(Equal(0))
+			Expect(*(*[]byte)(w.Next())).To(Equal([]byte("a")))
+			Expect(spy.called).To(Equal(1))
+			Expect(*(*[]byte)(w.Next())).To(Equal([]byte("b")))
+			Expect(spy.called).To(Equal(2))
+		})
 
-	It("waits until data is available", func() {
-		go func() {
-			time.Sleep(250 * time.Millisecond)
-			data := []byte("a")
-			w.Set(diodes.GenericDataType(&data))
-		}()
+		Context("when there is no new data", func() {
+			BeforeEach(func() {
+				spy.dataList = nil
+			})
 
-		Expect(*(*[]byte)(w.Next())).To(Equal([]byte("a")))
-	})
+			It("waits for Set to be called", func() {
+				go func() {
+					time.Sleep(250 * time.Millisecond)
+					data := []byte("c")
+					w.Set(diodes.GenericDataType(&data))
+				}()
+				Expect(spy.called).To(Equal(0))
+				Expect(*(*[]byte)(w.Next())).To(Equal([]byte("c")))
+				Expect(spy.called).To(Equal(2)) // Calls TryNext twice during wait loop
+			})
 
-	It("cancels Next() with context", func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		w = diodes.NewWaiter(spy, diodes.WithWaiterContext(ctx))
-		cancel()
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			w.Next()
-		}()
+			Context("when the context is cancelled", func() {
+				var cancel context.CancelFunc
 
-		Eventually(done).Should(BeClosed())
-	})
+				BeforeEach(func() {
+					var ctx context.Context
+					ctx, cancel = context.WithCancel(context.Background())
+					w = diodes.NewWaiter(spy, diodes.WithWaiterContext(ctx))
+				})
 
-	It("cancels current Next() with context", func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		w = diodes.NewWaiter(spy, diodes.WithWaiterContext(ctx))
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-			cancel()
-		}()
+				Context("beforehand", func() {
+					It("returns nil", func() {
+						cancel()
+						Expect(spy.called).To(Equal(0))
+						Expect(w.Next() == nil).To(BeTrue())
+						Expect(spy.called).To(Equal(1))
+					})
+				})
 
-		Expect(w.Next() == nil).To(BeTrue())
+				Context("while waiting", func() {
+					It("returns nil", func() {
+						go func() {
+							time.Sleep(250 * time.Millisecond)
+							cancel()
+						}()
+						Expect(spy.called).To(Equal(0))
+						Expect(w.Next() == nil).To(BeTrue())
+						Expect(spy.called).To(Equal(1))
+					})
+				})
+			})
+		})
 	})
 })

@@ -1,6 +1,6 @@
 module code.cloudfoundry.org/go-diodes
 
-go 1.18
+go 1.21
 
 require (
 	github.com/onsi/ginkgo/v2 v2.14.0

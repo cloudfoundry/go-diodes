@@ -118,7 +118,7 @@ func (d *OneToOne) TryNext() (data GenericDataType, ok bool) {
 	if result.seq > d.readIndex {
 		dropped := result.seq - d.readIndex
 		d.readIndex = result.seq
-		d.alerter.Alert(int(dropped))
+		d.alerter.Alert(int(dropped)) // nolint:gosec
 	}
 
 	// Only increment read index if a regular read occurred (where seq was

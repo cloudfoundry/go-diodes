@@ -58,7 +58,7 @@ func (w *Waiter) broadcast() {
 // context is done, then nil will be returned.
 func (w *Waiter) Next() GenericDataType {
 	for {
-		data, ok := w.Diode.TryNext()
+		data, ok := w.Diode.TryNext() // nolint:staticcheck
 		if ok {
 			return data
 		}

@@ -57,7 +57,7 @@ func NewPoller(d Diode, opts ...PollerConfigOption) *Poller {
 // If the context is done, then nil will be returned.
 func (p *Poller) Next() GenericDataType {
 	for {
-		data, ok := p.Diode.TryNext()
+		data, ok := p.Diode.TryNext() // nolint:staticcheck
 		if !ok {
 			if p.isDone() {
 				return nil

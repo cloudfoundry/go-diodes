@@ -1,21 +1,37 @@
----
+version: "2"
 linters:
   enable:
-  # Checks for non-ASCII identifiers.
-  - asciicheck
-  # Computes and checks the cyclomatic complexity of functions.
-  - gocyclo
-  # Inspects source code for security problems.
-  - gosec
-
-linters-settings:
-  gocyclo:
-    # Minimal code complexity to report.
-    # Default: 30 (but 10-20 recommended).
-    min-complexity: 20
-
+    # Checks for non-ASCII identifiers.
+    - asciicheck
+    # Computes and checks the cyclomatic complexity of functions.
+    - gocyclo
+    # Inspects source code for security problems.
+    - gosec
+  settings:
+    gocyclo:
+      # Minimal code complexity to report.
+      # Default: 30 (but 10-20 recommended).
+      min-complexity: 20
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
   # Disable max issues per linter.
   max-issues-per-linter: 0
   # Disable max same issues.
   max-same-issues: 0
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

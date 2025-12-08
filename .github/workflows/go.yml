@@ -37,6 +37,6 @@ jobs:
       with:
         go-version-file: 'go.mod'
         check-latest: true
-    - uses: golangci/golangci-lint-action@v9.1.0
+    - uses: golangci/golangci-lint-action@v9.2.0
       with:
         args: --config .golangci.yml
